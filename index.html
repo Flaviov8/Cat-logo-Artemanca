@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Artemanca</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #22c55e;
+            --primary-dark: #16a34a;
+            --primary-darker: #15803d;
+            --primary-light: #4ade80;
+            --primary-lighter: #86efac;
+            --secondary: #0f766e;
+            --secondary-light: #14b8a6;
+            --accent: #10b981;
+            --dark: #1a1a1a;
+            --darker: #0f0f0f;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gray-light: #cbd5e1;
+            --gray-lighter: #f1f5f9;
+            --glass: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --transition-fast: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b, #334155);
+            color: var(--light);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(34, 197, 94, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        /* Header responsivo */
+        header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            flex-shrink: 0;
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav {
+            width: 100%;
+            order: 3;
+            margin-top: 10px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 4px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 50px;
+            padding: 6px;
+            border: 1px solid var(--glass-border);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: none;
+            color: var(--light);
+            font-weight: 500;
+            padding: 10px 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary-light));
+            opacity: 0;
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .tab-button.active {
+            color: white;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .tab-button.active::before {
+            opacity: 1;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .admin-only {
+            display: none !important;
+        }
+
+        .admin-only.show {
+            display: block !important;
+        }
+
+        .admin-login {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-toggle {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            color: var(--light);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .admin-toggle:hover {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
+        }
+
+        .main-content {
+            padding: 40px 0;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--light), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary-light));
+            margin: 15px auto;
+            border-radius: 5px;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .product-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+
+        .product-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(20, 184, 166, 0.1));
+            opacity: 0;
+            transition: var(--transition);
+            z-index: -1;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .product-card:hover::before {
+            opacity: 1;
+        }
+
+        .product-image {
+            height: 200px;
+            width: 100%;
+            background: linear-gradient(135deg, #1e293b, #475569);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .product-image::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.8), transparent);
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--light);
+            line-height: 1.3;
+        }
+
+        .product-description {
+            color: var(--gray-light);
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .product-price::before {
+            content: 'R$';
+            font-size: 0.9rem;
+            color: var(--gray-light);
+        }
+
+        .whatsapp-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+
+        .whatsapp-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .whatsapp-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        .whatsapp-btn:hover::before {
+            left: 100%;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+
+        .product-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: #dc3545;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+
+        .form-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px 24px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--light);
+            font-size: 0.95rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: var(--transition);
+            color: var(--light);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .file-upload {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px dashed var(--glass-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--gray-light);
+            font-size: 0.95rem;
+        }
+
+        .file-upload-label:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: var(--primary);
+            color: var(--light);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.4);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--gray-light);
+            grid-column: 1 / -1;
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+            color: var(--gray);
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+            color: var(--light);
+        }
+
+        .empty-state p {
+            font-size: 1rem;
+        }
+
+        footer {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            margin-top: 60px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 16px;
+        }
+
+        .social-links a {
+            color: white;
+            font-size: 1.4rem;
+            transition: var(--transition);
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .social-links a:hover {
+            background: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .password-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 16px;
+        }
+
+        .password-modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .password-form {
+            background: var(--glass);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            padding: 30px 24px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--glass-border);
+            animation: scaleIn 0.3s ease;
+        }
+
+        @keyframes scaleIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .password-form h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--light);
+            font-size: 1.4rem;
+        }
+
+        .password-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .password-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Media Queries para responsividade */
+        @media (min-width: 480px) {
+            .container {
+                padding: 0 20px;
+            }
+            
+            .logo {
+                font-size: 1.5rem;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            }
+            
+            .form-container {
+                padding: 30px;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .header-content {
+                flex-wrap: nowrap;
+            }
+            
+            nav {
+                width: auto;
+                order: 0;
+                margin-top: 0;
+                margin: 0 20px;
+            }
+            
+            nav ul {
+                justify-content: flex-start;
+            }
+            
+            .tab-button {
+                padding: 12px 24px;
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 2.5rem;
+                margin-bottom: 50px;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 30px;
+            }
+            
+            .form-container {
+                max-width: 600px;
+                padding: 40px;
+            }
+            
+            .password-form {
+                padding: 40px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 0 24px;
+            }
+            
+            .products-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            }
+        }
+
+        /* Animações extras */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Scroll personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, var(--primary-light), var(--primary));
+        }
+
+        /* Melhorias para toque em dispositivos móveis */
+        @media (hover: none) {
+            .product-card:hover {
+                transform: none;
+            }
+            
+            .delete-btn {
+                opacity: 1;
+            }
+            
+            .whatsapp-btn:hover, .submit-btn:hover, .admin-toggle:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Catálogo Artemanca</span>
+                </div>
+                <nav>
+                    <ul>
+                        <li><button class="tab-button active" data-tab="products">Ver Produtos</button></li>
+                        <li><button class="tab-button admin-only" data-tab="add-product" style="display: none;">Cadastrar Produto</button></li>
+                    </ul>
+                </nav>
+                <div class="admin-login">
+                    <button class="admin-toggle" id="admin-toggle" title="Modo Administrador">
+                        <i class="fas fa-user-shield"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Aba de Produtos -->
+            <div id="products" class="tab-content active">
+                <h2 class="section-title">Nossos Produtos</h2>
+                <div class="products-grid" id="products-container">
+                    <!-- Produtos serão inseridos aqui via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Aba de Cadastro -->
+            <div id="add-product" class="tab-content">
+                <h2 class="section-title">Cadastrar Novo Produto</h2>
+                <div class="form-container">
+                    <form id="product-form">
+                        <div class="form-group">
+                            <label for="product-name">Nome do Produto</label>
+                            <input type="text" id="product-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-description">Descrição</label>
+                            <textarea id="product-description" class="form-control" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-price">Preço (R$)</label>
+                            <input type="number" id="product-price" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-image">Imagem do Produto</label>
+                            <div class="file-upload">
+                                <input type="file" id="product-image" accept="image/*" required>
+                                <div class="file-upload-label">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <span>Selecionar Imagem</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">Cadastrar Produto</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>Catálogo Artemanca</span>
+                </div>
+                <p>Entre em contato conosco pelo WhatsApp: (11) 98489-7049</p>
+                <div class="social-links">
+                    <a href="https://www.instagram.com/artemanca?igsh=MW1yb3BydXZ6ZGthNg==" target="_blank"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-whatsapp"></i></a>
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal de Senha -->
+    <div class="password-modal" id="password-modal">
+        <div class="password-form">
+            <h3>Acesso Administrativo</h3>
+            <div class="form-group">
+                <label for="admin-password">Senha</label>
+                <input type="password" id="admin-password" class="form-control" placeholder="Digite a senha de administrador">
+            </div>
+            <div class="password-actions">
+                <button class="btn-secondary" id="cancel-password">Cancelar</button>
+                <button class="btn-primary" id="submit-password">Acessar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados iniciais de exemplo
+        let products = JSON.parse(localStorage.getItem('products')) || [
+            {
+                id: 1,
+                name: "Smartphone XYZ",
+                description: "Smartphone com câmera de alta resolução e bateria de longa duração.",
+                price: 1299.99,
+                image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                id: 2,
+                name: "Fone de Ouvido Bluetooth",
+                description: "Fone de ouvido sem fio com cancelamento de ruído ativo.",
+                price: 299.99,
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+            },
+            {
+                id: 3,
+                name: "Relógio Inteligente",
+                description: "Relógio inteligente com monitoramento de atividades e notificações.",
+                price: 499.99,
+                image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+            }
+        ];
+
+        // Elementos DOM
+        const productsContainer = document.getElementById('products-container');
+        const productForm = document.getElementById('product-form');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const adminToggle = document.getElementById('admin-toggle');
+        const passwordModal = document.getElementById('password-modal');
+        const cancelPassword = document.getElementById('cancel-password');
+        const submitPassword = document.getElementById('submit-password');
+        const adminPasswordInput = document.getElementById('admin-password');
+
+        // Número do WhatsApp
+        const whatsappNumber = "11984897049";
+        
+        // Estado do modo administrador
+        let isAdminMode = false;
+        const ADMIN_PASSWORD = "admin123"; // Senha padrão
+
+        // Função para salvar produtos no localStorage
+        function saveProducts() {
+            localStorage.setItem('products', JSON.stringify(products));
+        }
+
+        // Função para atualizar a interface baseada no modo admin
+        function updateUIForAdminMode() {
+            const adminOnlyElements = document.querySelectorAll('.admin-only');
+            
+            if (isAdminMode) {
+                // Mostrar elementos apenas para admin
+                adminOnlyElements.forEach(element => {
+                    element.style.display = 'block';
+                    element.classList.add('show');
+                });
+            } else {
+                // Esconder elementos apenas para admin
+                adminOnlyElements.forEach(element => {
+                    element.style.display = 'none';
+                    element.classList.remove('show');
+                });
+                
+                // Se estiver na aba de cadastro, voltar para produtos
+                const addProductTab = document.querySelector('[data-tab="add-product"]');
+                if (addProductTab.classList.contains('active')) {
+                    document.querySelector('[data-tab="products"]').click();
+                }
+            }
+        }
+
+        // Função para renderizar produtos
+        function renderProducts() {
+            productsContainer.innerHTML = '';
+            
+            if (products.length === 0) {
+                productsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3>Nenhum produto cadastrado</h3>
+                        <p>Adicione produtos clicando na aba "Cadastrar Produto"</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'product-card';
+                
+                // Botão de exclusão apenas no modo administrador
+                const deleteButton = isAdminMode ? 
+                    `<button class="delete-btn" data-product-id="${product.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>` : '';
+                
+                productCard.innerHTML = `
+                    ${deleteButton}
+                    <div class="product-image">
+                        <img src="${product.image}" alt="${product.name}">
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">${product.name}</h3>
+                        <p class="product-description">${product.description}</p>
+                        <div class="product-price">${product.price.toFixed(2)}</div>
+                        <button class="whatsapp-btn" data-product-id="${product.id}">
+                            <i class="fab fa-whatsapp"></i>
+                            Falar com Vendedor
+                        </button>
+                    </div>
+                `;
+                productsContainer.appendChild(productCard);
+            });
+            
+            // Adicionar event listeners aos botões do WhatsApp
+            document.querySelectorAll('.whatsapp-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const productId = parseInt(this.getAttribute('data-product-id'));
+                    const product = products.find(p => p.id === productId);
+                    
+                    if (product) {
+                        const message = `Olá! Gostaria de saber mais sobre o produto: ${product.name}`;
+                        const whatsappURL = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappURL, '_blank');
+                    }
+                });
+            });
+            
+            // Adicionar event listeners aos botões de exclusão
+            if (isAdminMode) {
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const productId = parseInt(this.getAttribute('data-product-id'));
+                        deleteProduct(productId);
+                    });
+                });
+            }
+        }
+
+        // Função para excluir produto
+        function deleteProduct(productId) {
+            if (confirm('Tem certeza que deseja excluir este produto?')) {
+                products = products.filter(product => product.id !== productId);
+                saveProducts();
+                renderProducts();
+            }
+        }
+
+        // Função para alternar entre abas
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Verificar se é a aba de cadastro e se não é admin
+                if (tabId === 'add-product' && !isAdminMode) {
+                    alert('Acesso restrito! Faça login como administrador.');
+                    return;
+                }
+                
+                // Atualizar botões ativos
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Atualizar conteúdo ativo
+                tabContents.forEach(content => content.classList.remove('active'));
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Função para lidar com o envio do formulário
+        productForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('product-name').value;
+            const description = document.getElementById('product-description').value;
+            const price = parseFloat(document.getElementById('product-price').value);
+            const imageInput = document.getElementById('product-image');
+            
+            // Verificar se uma imagem foi selecionada
+            if (imageInput.files.length === 0) {
+                alert('Por favor, selecione uma imagem para o produto.');
+                return;
+            }
+            
+            // Criar URL da imagem (em um cenário real, isso seria feito no servidor)
+            const imageFile = imageInput.files[0];
+            const imageURL = URL.createObjectURL(imageFile);
+            
+            // Criar novo produto
+            const newProduct = {
+                id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+                name,
+                description,
+                price,
+                image: imageURL
+            };
+            
+            // Adicionar produto à lista
+            products.push(newProduct);
+            
+            // Salvar no localStorage
+            saveProducts();
+            
+            // Renderizar produtos atualizados
+            renderProducts();
+            
+            // Limpar formulário
+            productForm.reset();
+            
+            // Alternar para a aba de produtos
+            tabButtons.forEach(btn => {
+                if (btn.getAttribute('data-tab') === 'products') {
+                    btn.click();
+                }
+            });
+            
+            // Mostrar mensagem de sucesso
+            alert('Produto cadastrado com sucesso!');
+        });
+
+        // Função para alternar modo administrador
+        function toggleAdminMode() {
+            if (isAdminMode) {
+                // Desativar modo administrador
+                isAdminMode = false;
+                adminToggle.innerHTML = '<i class="fas fa-user-shield"></i>';
+                adminToggle.style.background = 'var(--glass)';
+                updateUIForAdminMode(); // Atualizar UI
+                renderProducts();
+            } else {
+                // Solicitar senha para ativar modo administrador
+                passwordModal.classList.add('active');
+                adminPasswordInput.focus();
+            }
+        }
+
+        // Função para verificar senha
+        function checkPassword() {
+            const password = adminPasswordInput.value;
+            
+            if (password === ADMIN_PASSWORD) {
+                isAdminMode = true;
+                adminToggle.innerHTML = '<i class="fas fa-user-cog"></i>';
+                adminToggle.style.background = 'rgba(34, 197, 94, 0.3)';
+                passwordModal.classList.remove('active');
+                adminPasswordInput.value = '';
+                updateUIForAdminMode(); // Atualizar UI
+                renderProducts();
+            } else {
+                alert('Senha incorreta!');
+                adminPasswordInput.value = '';
+                adminPasswordInput.focus();
+            }
+        }
+
+        // Event Listeners
+        adminToggle.addEventListener('click', toggleAdminMode);
+        cancelPassword.addEventListener('click', () => {
+            passwordModal.classList.remove('active');
+            adminPasswordInput.value = '';
+        });
+        submitPassword.addEventListener('click', checkPassword);
+        
+        // Permitir enviar senha com Enter
+        adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // Inicializar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            updateUIForAdminMode(); // Configurar UI inicial
+            renderProducts();
+        });
+    </script>
+</body>
+</html>
