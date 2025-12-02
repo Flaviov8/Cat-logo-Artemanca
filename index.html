@@ -664,6 +664,35 @@
             to { transform: rotate(360deg); }
         }
 
+        .storage-info {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .storage-bar {
+            flex-grow: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .storage-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary-light));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
         .empty-state {
             text-align: center;
             padding: 50px 20px;
@@ -990,7 +1019,7 @@
                             <input type="number" id="product-price" class="form-control" step="0.01" min="0" required>
                         </div>
                         <div class="form-group">
-                            <label for="product-images">Imagens do Produto (Múltiplas)</label>
+                            <label for="product-images">Imagens do Produto (Múltiplas - até 20 imagens)</label>
                             <div class="file-upload">
                                 <input type="file" id="product-images" accept="image/*" multiple required>
                                 <div class="file-upload-label" id="file-upload-label">
@@ -1003,6 +1032,13 @@
                             <div id="loading" class="loading">
                                 <i class="fas fa-spinner"></i>
                                 <span>Processando imagens...</span>
+                            </div>
+                            <div id="storage-info" class="storage-info" style="display: none;">
+                                <span id="storage-text">Uso de armazenamento</span>
+                                <div class="storage-bar">
+                                    <div class="storage-fill" id="storage-fill"></div>
+                                </div>
+                                <span id="storage-percent">0%</span>
                             </div>
                         </div>
                         <button type="submit" class="submit-btn">Cadastrar Produto</button>
@@ -1095,6 +1131,10 @@
         const selectedFilesContainer = document.getElementById('selected-files');
         const fileCounter = document.getElementById('file-counter');
         const loadingElement = document.getElementById('loading');
+        const storageInfo = document.getElementById('storage-info');
+        const storageFill = document.getElementById('storage-fill');
+        const storagePercent = document.getElementById('storage-percent');
+        const storageText = document.getElementById('storage-text');
 
         // Número do WhatsApp
         const whatsappNumber = "5511984897049";
@@ -1103,19 +1143,126 @@
         let isAdminMode = false;
         const ADMIN_PASSWORD = "admin123"; // Senha padrão
 
-        // Função para converter arquivo em Base64
-        function fileToBase64(file) {
+        // Limites de armazenamento (aumentados)
+        const MAX_IMAGES_PER_PRODUCT = 20;
+        const MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024; // 5MB (aumentado de 2MB)
+
+        // Função para comprimir imagem
+        function compressImage(file, maxWidth = 1200, quality = 0.7) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
+                
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Redimensionar se necessário
+                        if (width > maxWidth) {
+                            height = (height * maxWidth) / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Converter para JPEG com qualidade reduzida
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedBase64);
+                    };
+                    
+                    img.onerror = reject;
+                };
+                
+                reader.onerror = reject;
             });
+        }
+
+        // Função para converter arquivo em Base64 (com compressão)
+        function fileToBase64(file) {
+            return compressImage(file, 1200, 0.7); // 1200px de largura máxima, 70% de qualidade
+        }
+
+        // Função para calcular uso do localStorage
+        function calculateStorageUsage() {
+            const productsData = JSON.stringify(products);
+            const usedBytes = new Blob([productsData]).size;
+            const usedMB = usedBytes / (1024 * 1024);
+            const percent = (usedBytes / MAX_LOCALSTORAGE_SIZE) * 100;
+            
+            return { usedBytes, usedMB, percent };
+        }
+
+        // Função para atualizar display de armazenamento
+        function updateStorageDisplay() {
+            const storage = calculateStorageUsage();
+            const percent = Math.min(100, Math.round(storage.percent));
+            
+            storageFill.style.width = `${percent}%`;
+            storagePercent.textContent = `${percent}%`;
+            storageText.textContent = `Armazenamento: ${storage.usedMB.toFixed(2)}MB / 5MB`;
+            
+            // Mostrar/ocultar display baseado no uso
+            if (storage.percent > 5) {
+                storageInfo.style.display = 'flex';
+            } else {
+                storageInfo.style.display = 'none';
+            }
+            
+            // Alertas de uso
+            if (storage.percent > 90) {
+                storageFill.style.background = 'linear-gradient(to right, #ef4444, #dc2626)';
+                if (storage.percent > 95) {
+                    alert('Atenção: O armazenamento está quase cheio! Considere excluir produtos antigos.');
+                }
+            } else if (storage.percent > 70) {
+                storageFill.style.background = 'linear-gradient(to right, #f59e0b, #d97706)';
+            } else {
+                storageFill.style.background = 'linear-gradient(to right, var(--primary), var(--secondary-light))';
+            }
+            
+            return storage;
+        }
+
+        // Função para limpar produtos mais antigos se necessário
+        function cleanupIfNeeded() {
+            const storage = calculateStorageUsage();
+            
+            if (storage.percent > 95 && products.length > 3) {
+                if (confirm('Armazenamento quase cheio. Deseja remover os 3 produtos mais antigos?')) {
+                    // Remover os 3 produtos mais antigos (com menor ID)
+                    const sortedIds = [...products].sort((a, b) => a.id - b.id).map(p => p.id);
+                    const idsToRemove = sortedIds.slice(0, 3);
+                    
+                    products = products.filter(product => !idsToRemove.includes(product.id));
+                    saveProducts();
+                    renderProducts();
+                    updateStorageDisplay();
+                    alert('3 produtos mais antigos foram removidos para liberar espaço.');
+                }
+            }
         }
 
         // Função para salvar produtos no localStorage
         function saveProducts() {
-            localStorage.setItem('products', JSON.stringify(products));
+            try {
+                localStorage.setItem('products', JSON.stringify(products));
+                updateStorageDisplay();
+                cleanupIfNeeded();
+                return true;
+            } catch (error) {
+                console.error('Erro ao salvar no localStorage:', error);
+                alert('Erro: Não foi possível salvar os dados. O armazenamento pode estar cheio.');
+                return false;
+            }
         }
 
         // Função para atualizar a interface baseada no modo admin
@@ -1154,9 +1301,10 @@
                 files.slice(0, 3).forEach((file, index) => {
                     const filePreview = document.createElement('div');
                     filePreview.className = 'file-preview';
+                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
                     filePreview.innerHTML = `
                         <i class="fas fa-image"></i>
-                        <span>${file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name}</span>
+                        <span>${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name} (${fileSizeMB}MB)</span>
                     `;
                     selectedFilesContainer.appendChild(filePreview);
                 });
@@ -1171,7 +1319,9 @@
                     selectedFilesContainer.appendChild(moreFiles);
                 }
                 
-                fileCounter.textContent = `${files.length} imagem${files.length !== 1 ? 'ns' : ''} selecionada${files.length !== 1 ? 's' : ''}`;
+                // Calcular tamanho total
+                const totalSizeMB = files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
+                fileCounter.textContent = `${files.length} imagem${files.length !== 1 ? 'ns' : ''} (${totalSizeMB.toFixed(2)}MB)`;
             } else {
                 fileUploadLabel.classList.remove('has-files');
                 fileCounter.textContent = '';
@@ -1343,8 +1493,9 @@
         function deleteProduct(productId) {
             if (confirm('Tem certeza que deseja excluir este produto?')) {
                 products = products.filter(product => product.id !== productId);
-                saveProducts();
-                renderProducts();
+                if (saveProducts()) {
+                    renderProducts();
+                }
             }
         }
 
@@ -1366,6 +1517,11 @@
                 // Atualizar conteúdo ativo
                 tabContents.forEach(content => content.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
+                
+                // Atualizar display de armazenamento quando na aba de produtos
+                if (tabId === 'products') {
+                    updateStorageDisplay();
+                }
             });
         });
 
@@ -1384,23 +1540,27 @@
                 return;
             }
             
-            // Limite de tamanho para imagens (2MB por imagem)
-            const MAX_SIZE = 2 * 1024 * 1024; // 2MB em bytes
             const files = Array.from(imageInput.files);
             
-            // Verificar tamanho das imagens
-            for (const file of files) {
-                if (file.size > MAX_SIZE) {
-                    alert(`A imagem "${file.name}" é muito grande. O tamanho máximo permitido é 2MB.`);
-                    return;
-                }
+            // Verificar limite de imagens por produto
+            if (files.length > MAX_IMAGES_PER_PRODUCT) {
+                alert(`Por favor, selecione no máximo ${MAX_IMAGES_PER_PRODUCT} imagens por produto.`);
+                return;
+            }
+            
+            // Verificar uso atual do armazenamento
+            const currentStorage = calculateStorageUsage();
+            if (currentStorage.percent > 95) {
+                alert('Armazenamento quase cheio! Por favor, exclua alguns produtos antes de adicionar mais.');
+                return;
             }
             
             // Mostrar loading
             loadingElement.style.display = 'block';
+            submitBtn.disabled = true;
             
             try {
-                // Converter todas as imagens para Base64
+                // Converter todas as imagens para Base64 (com compressão)
                 const imagePromises = files.map(file => fileToBase64(file));
                 const imageBase64Array = await Promise.all(imagePromises);
                 
@@ -1410,39 +1570,40 @@
                     name,
                     description,
                     price,
-                    images: imageBase64Array // Armazenar como Base64
+                    images: imageBase64Array
                 };
                 
                 // Adicionar produto à lista
                 products.push(newProduct);
                 
                 // Salvar no localStorage
-                saveProducts();
-                
-                // Renderizar produtos atualizados
-                renderProducts();
-                
-                // Limpar formulário
-                productForm.reset();
-                selectedFilesContainer.innerHTML = '';
-                fileCounter.textContent = '';
-                fileUploadLabel.classList.remove('has-files');
-                
-                // Alternar para a aba de produtos
-                tabButtons.forEach(btn => {
-                    if (btn.getAttribute('data-tab') === 'products') {
-                        btn.click();
-                    }
-                });
-                
-                // Mostrar mensagem de sucesso
-                alert('Produto cadastrado com sucesso!');
+                if (saveProducts()) {
+                    // Renderizar produtos atualizados
+                    renderProducts();
+                    
+                    // Limpar formulário
+                    productForm.reset();
+                    selectedFilesContainer.innerHTML = '';
+                    fileCounter.textContent = '';
+                    fileUploadLabel.classList.remove('has-files');
+                    
+                    // Alternar para a aba de produtos
+                    tabButtons.forEach(btn => {
+                        if (btn.getAttribute('data-tab') === 'products') {
+                            btn.click();
+                        }
+                    });
+                    
+                    // Mostrar mensagem de sucesso
+                    alert('Produto cadastrado com sucesso!');
+                }
             } catch (error) {
                 console.error('Erro ao processar imagens:', error);
                 alert('Erro ao processar as imagens. Por favor, tente novamente.');
             } finally {
-                // Esconder loading
+                // Esconder loading e reativar botão
                 loadingElement.style.display = 'none';
+                submitBtn.disabled = false;
             }
         });
 
@@ -1496,11 +1657,11 @@
             }
         });
 
-        // Limitar o número de imagens para evitar problemas de armazenamento
+        // Limitar o número de imagens
         imagesInput.addEventListener('change', function() {
             const files = this.files;
-            if (files.length > 10) {
-                alert('Por favor, selecione no máximo 10 imagens.');
+            if (files.length > MAX_IMAGES_PER_PRODUCT) {
+                alert(`Por favor, selecione no máximo ${MAX_IMAGES_PER_PRODUCT} imagens.`);
                 this.value = '';
                 selectedFilesContainer.innerHTML = '';
                 fileCounter.textContent = '';
@@ -1512,6 +1673,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateUIForAdminMode(); // Configurar UI inicial
             renderProducts();
+            updateStorageDisplay(); // Mostrar uso de armazenamento
+            
+            // Referência ao botão submit
+            const submitBtn = document.querySelector('.submit-btn');
         });
     </script>
 </body>
