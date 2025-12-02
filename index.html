@@ -664,35 +664,6 @@
             to { transform: rotate(360deg); }
         }
 
-        .storage-info {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 15px;
-            font-size: 0.85rem;
-            color: var(--light);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .storage-bar {
-            flex-grow: 1;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            margin: 0 10px;
-        }
-
-        .storage-fill {
-            height: 100%;
-            background: linear-gradient(to right, var(--primary), var(--secondary-light));
-            border-radius: 3px;
-            transition: width 0.5s ease;
-        }
-
         .empty-state {
             text-align: center;
             padding: 50px 20px;
@@ -1019,7 +990,7 @@
                             <input type="number" id="product-price" class="form-control" step="0.01" min="0" required>
                         </div>
                         <div class="form-group">
-                            <label for="product-images">Imagens do Produto (Múltiplas - até 20 imagens)</label>
+                            <label for="product-images">Imagens do Produto (Múltiplas - até 10 imagens)</label>
                             <div class="file-upload">
                                 <input type="file" id="product-images" accept="image/*" multiple required>
                                 <div class="file-upload-label" id="file-upload-label">
@@ -1033,15 +1004,8 @@
                                 <i class="fas fa-spinner"></i>
                                 <span>Processando imagens...</span>
                             </div>
-                            <div id="storage-info" class="storage-info" style="display: none;">
-                                <span id="storage-text">Uso de armazenamento</span>
-                                <div class="storage-bar">
-                                    <div class="storage-fill" id="storage-fill"></div>
-                                </div>
-                                <span id="storage-percent">0%</span>
-                            </div>
                         </div>
-                        <button type="submit" class="submit-btn">Cadastrar Produto</button>
+                        <button type="submit" class="submit-btn" id="submit-btn">Cadastrar Produto</button>
                     </form>
                 </div>
             </div>
@@ -1131,10 +1095,7 @@
         const selectedFilesContainer = document.getElementById('selected-files');
         const fileCounter = document.getElementById('file-counter');
         const loadingElement = document.getElementById('loading');
-        const storageInfo = document.getElementById('storage-info');
-        const storageFill = document.getElementById('storage-fill');
-        const storagePercent = document.getElementById('storage-percent');
-        const storageText = document.getElementById('storage-text');
+        const submitBtn = document.getElementById('submit-btn');
 
         // Número do WhatsApp
         const whatsappNumber = "5511984897049";
@@ -1143,39 +1104,56 @@
         let isAdminMode = false;
         const ADMIN_PASSWORD = "admin123"; // Senha padrão
 
-        // Limites de armazenamento (aumentados)
-        const MAX_IMAGES_PER_PRODUCT = 20;
-        const MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024; // 5MB (aumentado de 2MB)
-
-        // Função para comprimir imagem
-        function compressImage(file, maxWidth = 1200, quality = 0.7) {
+        // Função para converter arquivo em Base64 (SIMPLIFICADA)
+        function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Função para comprimir imagem SIMPLES
+        function compressImageSimple(file) {
+            return new Promise((resolve, reject) => {
+                if (file.size < 500 * 1024) { // Se for menor que 500KB, não comprime
+                    fileToBase64(file).then(resolve).catch(reject);
+                    return;
+                }
                 
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
+                const img = new Image();
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    img.src = e.target.result;
                     
-                    img.onload = () => {
+                    img.onload = function() {
                         const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Reduzir tamanho se for muito grande
                         let width = img.width;
                         let height = img.height;
+                        const MAX_SIZE = 1200;
                         
-                        // Redimensionar se necessário
-                        if (width > maxWidth) {
-                            height = (height * maxWidth) / width;
-                            width = maxWidth;
+                        if (width > MAX_SIZE || height > MAX_SIZE) {
+                            if (width > height) {
+                                height = (height * MAX_SIZE) / width;
+                                width = MAX_SIZE;
+                            } else {
+                                width = (width * MAX_SIZE) / height;
+                                height = MAX_SIZE;
+                            }
                         }
                         
                         canvas.width = width;
                         canvas.height = height;
                         
-                        const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
                         
-                        // Converter para JPEG com qualidade reduzida
-                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        // Converter para JPEG com 70% de qualidade
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
                         resolve(compressedBase64);
                     };
                     
@@ -1183,85 +1161,29 @@
                 };
                 
                 reader.onerror = reject;
+                reader.readAsDataURL(file);
             });
-        }
-
-        // Função para converter arquivo em Base64 (com compressão)
-        function fileToBase64(file) {
-            return compressImage(file, 1200, 0.7); // 1200px de largura máxima, 70% de qualidade
-        }
-
-        // Função para calcular uso do localStorage
-        function calculateStorageUsage() {
-            const productsData = JSON.stringify(products);
-            const usedBytes = new Blob([productsData]).size;
-            const usedMB = usedBytes / (1024 * 1024);
-            const percent = (usedBytes / MAX_LOCALSTORAGE_SIZE) * 100;
-            
-            return { usedBytes, usedMB, percent };
-        }
-
-        // Função para atualizar display de armazenamento
-        function updateStorageDisplay() {
-            const storage = calculateStorageUsage();
-            const percent = Math.min(100, Math.round(storage.percent));
-            
-            storageFill.style.width = `${percent}%`;
-            storagePercent.textContent = `${percent}%`;
-            storageText.textContent = `Armazenamento: ${storage.usedMB.toFixed(2)}MB / 5MB`;
-            
-            // Mostrar/ocultar display baseado no uso
-            if (storage.percent > 5) {
-                storageInfo.style.display = 'flex';
-            } else {
-                storageInfo.style.display = 'none';
-            }
-            
-            // Alertas de uso
-            if (storage.percent > 90) {
-                storageFill.style.background = 'linear-gradient(to right, #ef4444, #dc2626)';
-                if (storage.percent > 95) {
-                    alert('Atenção: O armazenamento está quase cheio! Considere excluir produtos antigos.');
-                }
-            } else if (storage.percent > 70) {
-                storageFill.style.background = 'linear-gradient(to right, #f59e0b, #d97706)';
-            } else {
-                storageFill.style.background = 'linear-gradient(to right, var(--primary), var(--secondary-light))';
-            }
-            
-            return storage;
-        }
-
-        // Função para limpar produtos mais antigos se necessário
-        function cleanupIfNeeded() {
-            const storage = calculateStorageUsage();
-            
-            if (storage.percent > 95 && products.length > 3) {
-                if (confirm('Armazenamento quase cheio. Deseja remover os 3 produtos mais antigos?')) {
-                    // Remover os 3 produtos mais antigos (com menor ID)
-                    const sortedIds = [...products].sort((a, b) => a.id - b.id).map(p => p.id);
-                    const idsToRemove = sortedIds.slice(0, 3);
-                    
-                    products = products.filter(product => !idsToRemove.includes(product.id));
-                    saveProducts();
-                    renderProducts();
-                    updateStorageDisplay();
-                    alert('3 produtos mais antigos foram removidos para liberar espaço.');
-                }
-            }
         }
 
         // Função para salvar produtos no localStorage
         function saveProducts() {
             try {
                 localStorage.setItem('products', JSON.stringify(products));
-                updateStorageDisplay();
-                cleanupIfNeeded();
                 return true;
             } catch (error) {
-                console.error('Erro ao salvar no localStorage:', error);
-                alert('Erro: Não foi possível salvar os dados. O armazenamento pode estar cheio.');
-                return false;
+                console.error('Erro ao salvar:', error);
+                // Se der erro, limpa localStorage e tenta salvar apenas os últimos 10 produtos
+                try {
+                    const recentProducts = products.slice(-10);
+                    localStorage.clear();
+                    localStorage.setItem('products', JSON.stringify(recentProducts));
+                    products = recentProducts;
+                    alert('Armazenamento cheio! Mantidos apenas os 10 produtos mais recentes.');
+                    return true;
+                } catch (e) {
+                    alert('Erro grave no armazenamento. Os dados podem não ter sido salvos.');
+                    return false;
+                }
             }
         }
 
@@ -1270,19 +1192,16 @@
             const adminOnlyElements = document.querySelectorAll('.admin-only');
             
             if (isAdminMode) {
-                // Mostrar elementos apenas para admin
                 adminOnlyElements.forEach(element => {
                     element.style.display = 'block';
                     element.classList.add('show');
                 });
             } else {
-                // Esconder elementos apenas para admin
                 adminOnlyElements.forEach(element => {
                     element.style.display = 'none';
                     element.classList.remove('show');
                 });
                 
-                // Se estiver na aba de cadastro, voltar para produtos
                 const addProductTab = document.querySelector('[data-tab="add-product"]');
                 if (addProductTab.classList.contains('active')) {
                     document.querySelector('[data-tab="products"]').click();
@@ -1298,13 +1217,14 @@
             if (files.length > 0) {
                 fileUploadLabel.classList.add('has-files');
                 
+                // Mostrar apenas os primeiros 3 arquivos
                 files.slice(0, 3).forEach((file, index) => {
                     const filePreview = document.createElement('div');
                     filePreview.className = 'file-preview';
-                    const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                    const fileSize = (file.size / 1024).toFixed(0);
                     filePreview.innerHTML = `
                         <i class="fas fa-image"></i>
-                        <span>${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name} (${fileSizeMB}MB)</span>
+                        <span>${file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name} (${fileSize}KB)</span>
                     `;
                     selectedFilesContainer.appendChild(filePreview);
                 });
@@ -1320,8 +1240,8 @@
                 }
                 
                 // Calcular tamanho total
-                const totalSizeMB = files.reduce((total, file) => total + file.size, 0) / (1024 * 1024);
-                fileCounter.textContent = `${files.length} imagem${files.length !== 1 ? 'ns' : ''} (${totalSizeMB.toFixed(2)}MB)`;
+                const totalSizeKB = files.reduce((total, file) => total + file.size, 0) / 1024;
+                fileCounter.textContent = `${files.length} imagem${files.length !== 1 ? 'ns' : ''} (${totalSizeKB.toFixed(0)}KB)`;
             } else {
                 fileUploadLabel.classList.remove('has-files');
                 fileCounter.textContent = '';
@@ -1329,7 +1249,7 @@
         });
 
         // Função para inicializar galeria de um produto
-        function initProductGallery(galleryContainer, productId, images) {
+        function initProductGallery(galleryContainer, images) {
             if (!galleryContainer || images.length <= 1) return;
             
             let currentImageIndex = 0;
@@ -1338,26 +1258,20 @@
             const nextBtn = galleryContainer.querySelector('.gallery-next');
             const dots = galleryContainer.querySelectorAll('.gallery-dot');
             
-            // Atualizar a imagem exibida
             function updateGalleryImage() {
                 if (imageElement) {
                     imageElement.style.opacity = '0';
-                    
                     setTimeout(() => {
                         imageElement.src = images[currentImageIndex];
                         imageElement.style.opacity = '1';
                     }, 150);
                 }
                 
-                // Atualizar indicadores
                 dots.forEach((dot, index) => {
-                    if (dot) {
-                        dot.classList.toggle('active', index === currentImageIndex);
-                    }
+                    if (dot) dot.classList.toggle('active', index === currentImageIndex);
                 });
             }
             
-            // Adicionar event listeners para controles
             if (prevBtn) {
                 prevBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -1384,7 +1298,6 @@
                 }
             });
             
-            // Inicializar com a primeira imagem
             updateGalleryImage();
         }
 
@@ -1407,13 +1320,11 @@
                 const productCard = document.createElement('div');
                 productCard.className = 'product-card';
                 
-                // Botão de exclusão apenas no modo administrador
                 const deleteButton = isAdminMode ? 
                     `<button class="delete-btn" data-product-id="${product.id}">
                         <i class="fas fa-trash"></i>
                     </button>` : '';
                 
-                // Construir controles da galeria se houver mais de uma imagem
                 let galleryControls = '';
                 let galleryIndicators = '';
                 
@@ -1432,7 +1343,7 @@
                     galleryIndicators = `<div class="gallery-indicators">`;
                     product.images.forEach((_, index) => {
                         galleryIndicators += `
-                            <button class="gallery-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></button>
+                            <button class="gallery-dot ${index === 0 ? 'active' : ''}"></button>
                         `;
                     });
                     galleryIndicators += `</div>`;
@@ -1440,7 +1351,7 @@
                 
                 productCard.innerHTML = `
                     ${deleteButton}
-                    <div class="product-gallery" data-product-id="${product.id}">
+                    <div class="product-gallery">
                         <img src="${product.images[0]}" alt="${product.name}" class="product-image">
                         ${galleryControls}
                         ${galleryIndicators}
@@ -1455,16 +1366,16 @@
                         </button>
                     </div>
                 `;
+                
                 productsContainer.appendChild(productCard);
                 
-                // Inicializar galeria se houver múltiplas imagens
                 if (product.images.length > 1) {
                     const galleryContainer = productCard.querySelector('.product-gallery');
-                    initProductGallery(galleryContainer, product.id, product.images);
+                    initProductGallery(galleryContainer, product.images);
                 }
             });
             
-            // Adicionar event listeners aos botões do WhatsApp
+            // Botões do WhatsApp
             document.querySelectorAll('.whatsapp-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const productId = parseInt(this.getAttribute('data-product-id'));
@@ -1478,7 +1389,7 @@
                 });
             });
             
-            // Adicionar event listeners aos botões de exclusão
+            // Botões de exclusão
             if (isAdminMode) {
                 document.querySelectorAll('.delete-btn').forEach(button => {
                     button.addEventListener('click', function() {
@@ -1493,9 +1404,8 @@
         function deleteProduct(productId) {
             if (confirm('Tem certeza que deseja excluir este produto?')) {
                 products = products.filter(product => product.id !== productId);
-                if (saveProducts()) {
-                    renderProducts();
-                }
+                saveProducts();
+                renderProducts();
             }
         }
 
@@ -1504,65 +1414,57 @@
             button.addEventListener('click', function() {
                 const tabId = this.getAttribute('data-tab');
                 
-                // Verificar se é a aba de cadastro e se não é admin
                 if (tabId === 'add-product' && !isAdminMode) {
                     alert('Acesso restrito! Faça login como administrador.');
                     return;
                 }
                 
-                // Atualizar botões ativos
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 this.classList.add('active');
                 
-                // Atualizar conteúdo ativo
                 tabContents.forEach(content => content.classList.remove('active'));
                 document.getElementById(tabId).classList.add('active');
-                
-                // Atualizar display de armazenamento quando na aba de produtos
-                if (tabId === 'products') {
-                    updateStorageDisplay();
-                }
             });
         });
 
-        // Função para lidar com o envio do formulário
+        // Função para lidar com o envio do formulário (SIMPLIFICADA)
         productForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const name = document.getElementById('product-name').value;
-            const description = document.getElementById('product-description').value;
+            const name = document.getElementById('product-name').value.trim();
+            const description = document.getElementById('product-description').value.trim();
             const price = parseFloat(document.getElementById('product-price').value);
             const imageInput = document.getElementById('product-images');
             
-            // Verificar se imagens foram selecionadas
-            if (imageInput.files.length === 0) {
-                alert('Por favor, selecione pelo menos uma imagem para o produto.');
+            if (!name || !description || !price || imageInput.files.length === 0) {
+                alert('Por favor, preencha todos os campos e selecione pelo menos uma imagem.');
                 return;
             }
             
             const files = Array.from(imageInput.files);
             
-            // Verificar limite de imagens por produto
-            if (files.length > MAX_IMAGES_PER_PRODUCT) {
-                alert(`Por favor, selecione no máximo ${MAX_IMAGES_PER_PRODUCT} imagens por produto.`);
+            // Limitar a 10 imagens
+            if (files.length > 10) {
+                alert('Por favor, selecione no máximo 10 imagens.');
                 return;
             }
             
-            // Verificar uso atual do armazenamento
-            const currentStorage = calculateStorageUsage();
-            if (currentStorage.percent > 95) {
-                alert('Armazenamento quase cheio! Por favor, exclua alguns produtos antes de adicionar mais.');
-                return;
-            }
-            
-            // Mostrar loading
-            loadingElement.style.display = 'block';
+            // Desabilitar botão e mostrar loading
             submitBtn.disabled = true;
+            loadingElement.style.display = 'block';
             
             try {
-                // Converter todas as imagens para Base64 (com compressão)
-                const imagePromises = files.map(file => fileToBase64(file));
-                const imageBase64Array = await Promise.all(imagePromises);
+                // Processar imagens UMA POR VEZ para evitar sobrecarga
+                const imageBase64Array = [];
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const base64 = await compressImageSimple(file);
+                    imageBase64Array.push(base64);
+                    
+                    // Atualizar progresso
+                    fileCounter.textContent = `Processando ${i + 1}/${files.length} imagens...`;
+                }
                 
                 // Criar novo produto
                 const newProduct = {
@@ -1578,7 +1480,7 @@
                 
                 // Salvar no localStorage
                 if (saveProducts()) {
-                    // Renderizar produtos atualizados
+                    // Renderizar produtos
                     renderProducts();
                     
                     // Limpar formulário
@@ -1587,37 +1489,30 @@
                     fileCounter.textContent = '';
                     fileUploadLabel.classList.remove('has-files');
                     
-                    // Alternar para a aba de produtos
-                    tabButtons.forEach(btn => {
-                        if (btn.getAttribute('data-tab') === 'products') {
-                            btn.click();
-                        }
-                    });
+                    // Ir para aba de produtos
+                    document.querySelector('[data-tab="products"]').click();
                     
-                    // Mostrar mensagem de sucesso
                     alert('Produto cadastrado com sucesso!');
                 }
             } catch (error) {
-                console.error('Erro ao processar imagens:', error);
-                alert('Erro ao processar as imagens. Por favor, tente novamente.');
+                console.error('Erro:', error);
+                alert('Erro ao processar imagens. Tente com imagens menores ou menos imagens.');
             } finally {
-                // Esconder loading e reativar botão
-                loadingElement.style.display = 'none';
+                // Reativar botão e esconder loading
                 submitBtn.disabled = false;
+                loadingElement.style.display = 'none';
             }
         });
 
         // Função para alternar modo administrador
         function toggleAdminMode() {
             if (isAdminMode) {
-                // Desativar modo administrador
                 isAdminMode = false;
                 adminToggle.innerHTML = '<i class="fas fa-user-shield"></i>';
                 adminToggle.style.background = 'var(--glass)';
-                updateUIForAdminMode(); // Atualizar UI
+                updateUIForAdminMode();
                 renderProducts();
             } else {
-                // Solicitar senha para ativar modo administrador
                 passwordModal.classList.add('active');
                 adminPasswordInput.focus();
             }
@@ -1633,7 +1528,7 @@
                 adminToggle.style.background = 'rgba(34, 197, 94, 0.3)';
                 passwordModal.classList.remove('active');
                 adminPasswordInput.value = '';
-                updateUIForAdminMode(); // Atualizar UI
+                updateUIForAdminMode();
                 renderProducts();
             } else {
                 alert('Senha incorreta!');
@@ -1650,18 +1545,15 @@
         });
         submitPassword.addEventListener('click', checkPassword);
         
-        // Permitir enviar senha com Enter
         adminPasswordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
+            if (e.key === 'Enter') checkPassword();
         });
 
-        // Limitar o número de imagens
+        // Limitar número de imagens
         imagesInput.addEventListener('change', function() {
             const files = this.files;
-            if (files.length > MAX_IMAGES_PER_PRODUCT) {
-                alert(`Por favor, selecione no máximo ${MAX_IMAGES_PER_PRODUCT} imagens.`);
+            if (files.length > 10) {
+                alert('Máximo de 10 imagens por produto.');
                 this.value = '';
                 selectedFilesContainer.innerHTML = '';
                 fileCounter.textContent = '';
@@ -1671,12 +1563,8 @@
 
         // Inicializar a página
         document.addEventListener('DOMContentLoaded', function() {
-            updateUIForAdminMode(); // Configurar UI inicial
+            updateUIForAdminMode();
             renderProducts();
-            updateStorageDisplay(); // Mostrar uso de armazenamento
-            
-            // Referência ao botão submit
-            const submitBtn = document.querySelector('.submit-btn');
         });
     </script>
 </body>
