@@ -292,18 +292,87 @@
             opacity: 1;
         }
 
-        .product-image {
+        .product-gallery {
             height: 200px;
             width: 100%;
             background: linear-gradient(135deg, #1e293b, #475569);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.5s ease;
+            display: block;
+        }
+
+        .gallery-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .gallery-controls button {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-            position: relative;
+            pointer-events: auto;
         }
 
-        .product-image::after {
+        .gallery-controls button:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .gallery-indicators {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            z-index: 2;
+        }
+
+        .gallery-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            pointer-events: auto;
+        }
+
+        .gallery-dot.active {
+            background: var(--primary);
+            transform: scale(1.2);
+        }
+
+        .product-gallery::after {
             content: '';
             position: absolute;
             bottom: 0;
@@ -311,17 +380,7 @@
             width: 100%;
             height: 40%;
             background: linear-gradient(to top, rgba(15, 23, 42, 0.8), transparent);
-        }
-
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: var(--transition);
-        }
-
-        .product-card:hover .product-image img {
-            transform: scale(1.05);
+            z-index: 1;
         }
 
         .product-info {
@@ -420,7 +479,7 @@
             transition: var(--transition);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            z-index: 2;
+            z-index: 10;
         }
 
         .product-card:hover .delete-btn {
@@ -517,6 +576,41 @@
             color: var(--light);
         }
 
+        .file-upload-label.has-files {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--primary);
+            color: var(--light);
+        }
+
+        .selected-files {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .file-preview {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .file-preview i {
+            color: var(--primary);
+        }
+
+        .file-counter {
+            font-size: 0.85rem;
+            color: var(--gray-light);
+            margin-top: 5px;
+            text-align: center;
+        }
+
         .submit-btn {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
@@ -550,6 +644,24 @@
 
         .submit-btn:hover::before {
             left: 100%;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+
+        .loading i {
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .empty-state {
@@ -878,13 +990,19 @@
                             <input type="number" id="product-price" class="form-control" step="0.01" min="0" required>
                         </div>
                         <div class="form-group">
-                            <label for="product-image">Imagem do Produto</label>
+                            <label for="product-images">Imagens do Produto (Múltiplas)</label>
                             <div class="file-upload">
-                                <input type="file" id="product-image" accept="image/*" required>
-                                <div class="file-upload-label">
+                                <input type="file" id="product-images" accept="image/*" multiple required>
+                                <div class="file-upload-label" id="file-upload-label">
                                     <i class="fas fa-cloud-upload-alt"></i>
-                                    <span>Selecionar Imagem</span>
+                                    <span>Selecionar Imagens</span>
                                 </div>
+                            </div>
+                            <div id="selected-files" class="selected-files"></div>
+                            <div id="file-counter" class="file-counter"></div>
+                            <div id="loading" class="loading">
+                                <i class="fas fa-spinner"></i>
+                                <span>Processando imagens...</span>
                             </div>
                         </div>
                         <button type="submit" class="submit-btn">Cadastrar Produto</button>
@@ -934,21 +1052,31 @@
                 name: "Smartphone XYZ",
                 description: "Smartphone com câmera de alta resolução e bateria de longa duração.",
                 price: 1299.99,
-                image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                images: [
+                    "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1598327105666-5b89351aff97?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                ]
             },
             {
                 id: 2,
                 name: "Fone de Ouvido Bluetooth",
                 description: "Fone de ouvido sem fio com cancelamento de ruído ativo.",
                 price: 299.99,
-                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                images: [
+                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1484704849700-f032a568e944?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                ]
             },
             {
                 id: 3,
                 name: "Relógio Inteligente",
                 description: "Relógio inteligente com monitoramento de atividades e notificações.",
                 price: 499.99,
-                image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                images: [
+                    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80",
+                    "https://images.unsplash.com/photo-1579586337278-3fda9d1e5bc4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80"
+                ]
             }
         ];
 
@@ -962,6 +1090,11 @@
         const cancelPassword = document.getElementById('cancel-password');
         const submitPassword = document.getElementById('submit-password');
         const adminPasswordInput = document.getElementById('admin-password');
+        const imagesInput = document.getElementById('product-images');
+        const fileUploadLabel = document.getElementById('file-upload-label');
+        const selectedFilesContainer = document.getElementById('selected-files');
+        const fileCounter = document.getElementById('file-counter');
+        const loadingElement = document.getElementById('loading');
 
         // Número do WhatsApp
         const whatsappNumber = "5511984897049";
@@ -969,6 +1102,16 @@
         // Estado do modo administrador
         let isAdminMode = false;
         const ADMIN_PASSWORD = "admin123"; // Senha padrão
+
+        // Função para converter arquivo em Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
 
         // Função para salvar produtos no localStorage
         function saveProducts() {
@@ -1000,6 +1143,101 @@
             }
         }
 
+        // Função para mostrar arquivos selecionados
+        imagesInput.addEventListener('change', function() {
+            selectedFilesContainer.innerHTML = '';
+            const files = Array.from(this.files);
+            
+            if (files.length > 0) {
+                fileUploadLabel.classList.add('has-files');
+                
+                files.slice(0, 3).forEach((file, index) => {
+                    const filePreview = document.createElement('div');
+                    filePreview.className = 'file-preview';
+                    filePreview.innerHTML = `
+                        <i class="fas fa-image"></i>
+                        <span>${file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name}</span>
+                    `;
+                    selectedFilesContainer.appendChild(filePreview);
+                });
+                
+                if (files.length > 3) {
+                    const moreFiles = document.createElement('div');
+                    moreFiles.className = 'file-preview';
+                    moreFiles.innerHTML = `
+                        <i class="fas fa-plus"></i>
+                        <span>+${files.length - 3} mais</span>
+                    `;
+                    selectedFilesContainer.appendChild(moreFiles);
+                }
+                
+                fileCounter.textContent = `${files.length} imagem${files.length !== 1 ? 'ns' : ''} selecionada${files.length !== 1 ? 's' : ''}`;
+            } else {
+                fileUploadLabel.classList.remove('has-files');
+                fileCounter.textContent = '';
+            }
+        });
+
+        // Função para inicializar galeria de um produto
+        function initProductGallery(galleryContainer, productId, images) {
+            if (!galleryContainer || images.length <= 1) return;
+            
+            let currentImageIndex = 0;
+            const imageElement = galleryContainer.querySelector('.product-image');
+            const prevBtn = galleryContainer.querySelector('.gallery-prev');
+            const nextBtn = galleryContainer.querySelector('.gallery-next');
+            const dots = galleryContainer.querySelectorAll('.gallery-dot');
+            
+            // Atualizar a imagem exibida
+            function updateGalleryImage() {
+                if (imageElement) {
+                    imageElement.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        imageElement.src = images[currentImageIndex];
+                        imageElement.style.opacity = '1';
+                    }, 150);
+                }
+                
+                // Atualizar indicadores
+                dots.forEach((dot, index) => {
+                    if (dot) {
+                        dot.classList.toggle('active', index === currentImageIndex);
+                    }
+                });
+            }
+            
+            // Adicionar event listeners para controles
+            if (prevBtn) {
+                prevBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+                    updateGalleryImage();
+                };
+            }
+            
+            if (nextBtn) {
+                nextBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    currentImageIndex = (currentImageIndex + 1) % images.length;
+                    updateGalleryImage();
+                };
+            }
+            
+            dots.forEach((dot, index) => {
+                if (dot) {
+                    dot.onclick = (e) => {
+                        e.stopPropagation();
+                        currentImageIndex = index;
+                        updateGalleryImage();
+                    };
+                }
+            });
+            
+            // Inicializar com a primeira imagem
+            updateGalleryImage();
+        }
+
         // Função para renderizar produtos
         function renderProducts() {
             productsContainer.innerHTML = '';
@@ -1025,10 +1263,37 @@
                         <i class="fas fa-trash"></i>
                     </button>` : '';
                 
+                // Construir controles da galeria se houver mais de uma imagem
+                let galleryControls = '';
+                let galleryIndicators = '';
+                
+                if (product.images && product.images.length > 1) {
+                    galleryControls = `
+                        <div class="gallery-controls">
+                            <button class="gallery-prev">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="gallery-next">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    galleryIndicators = `<div class="gallery-indicators">`;
+                    product.images.forEach((_, index) => {
+                        galleryIndicators += `
+                            <button class="gallery-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></button>
+                        `;
+                    });
+                    galleryIndicators += `</div>`;
+                }
+                
                 productCard.innerHTML = `
                     ${deleteButton}
-                    <div class="product-image">
-                        <img src="${product.image}" alt="${product.name}">
+                    <div class="product-gallery" data-product-id="${product.id}">
+                        <img src="${product.images[0]}" alt="${product.name}" class="product-image">
+                        ${galleryControls}
+                        ${galleryIndicators}
                     </div>
                     <div class="product-info">
                         <h3 class="product-name">${product.name}</h3>
@@ -1041,6 +1306,12 @@
                     </div>
                 `;
                 productsContainer.appendChild(productCard);
+                
+                // Inicializar galeria se houver múltiplas imagens
+                if (product.images.length > 1) {
+                    const galleryContainer = productCard.querySelector('.product-gallery');
+                    initProductGallery(galleryContainer, product.id, product.images);
+                }
             });
             
             // Adicionar event listeners aos botões do WhatsApp
@@ -1099,54 +1370,80 @@
         });
 
         // Função para lidar com o envio do formulário
-        productForm.addEventListener('submit', function(e) {
+        productForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const name = document.getElementById('product-name').value;
             const description = document.getElementById('product-description').value;
             const price = parseFloat(document.getElementById('product-price').value);
-            const imageInput = document.getElementById('product-image');
+            const imageInput = document.getElementById('product-images');
             
-            // Verificar se uma imagem foi selecionada
+            // Verificar se imagens foram selecionadas
             if (imageInput.files.length === 0) {
-                alert('Por favor, selecione uma imagem para o produto.');
+                alert('Por favor, selecione pelo menos uma imagem para o produto.');
                 return;
             }
             
-            // Criar URL da imagem (em um cenário real, isso seria feito no servidor)
-            const imageFile = imageInput.files[0];
-            const imageURL = URL.createObjectURL(imageFile);
+            // Limite de tamanho para imagens (2MB por imagem)
+            const MAX_SIZE = 2 * 1024 * 1024; // 2MB em bytes
+            const files = Array.from(imageInput.files);
             
-            // Criar novo produto
-            const newProduct = {
-                id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
-                name,
-                description,
-                price,
-                image: imageURL
-            };
-            
-            // Adicionar produto à lista
-            products.push(newProduct);
-            
-            // Salvar no localStorage
-            saveProducts();
-            
-            // Renderizar produtos atualizados
-            renderProducts();
-            
-            // Limpar formulário
-            productForm.reset();
-            
-            // Alternar para a aba de produtos
-            tabButtons.forEach(btn => {
-                if (btn.getAttribute('data-tab') === 'products') {
-                    btn.click();
+            // Verificar tamanho das imagens
+            for (const file of files) {
+                if (file.size > MAX_SIZE) {
+                    alert(`A imagem "${file.name}" é muito grande. O tamanho máximo permitido é 2MB.`);
+                    return;
                 }
-            });
+            }
             
-            // Mostrar mensagem de sucesso
-            alert('Produto cadastrado com sucesso!');
+            // Mostrar loading
+            loadingElement.style.display = 'block';
+            
+            try {
+                // Converter todas as imagens para Base64
+                const imagePromises = files.map(file => fileToBase64(file));
+                const imageBase64Array = await Promise.all(imagePromises);
+                
+                // Criar novo produto
+                const newProduct = {
+                    id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1,
+                    name,
+                    description,
+                    price,
+                    images: imageBase64Array // Armazenar como Base64
+                };
+                
+                // Adicionar produto à lista
+                products.push(newProduct);
+                
+                // Salvar no localStorage
+                saveProducts();
+                
+                // Renderizar produtos atualizados
+                renderProducts();
+                
+                // Limpar formulário
+                productForm.reset();
+                selectedFilesContainer.innerHTML = '';
+                fileCounter.textContent = '';
+                fileUploadLabel.classList.remove('has-files');
+                
+                // Alternar para a aba de produtos
+                tabButtons.forEach(btn => {
+                    if (btn.getAttribute('data-tab') === 'products') {
+                        btn.click();
+                    }
+                });
+                
+                // Mostrar mensagem de sucesso
+                alert('Produto cadastrado com sucesso!');
+            } catch (error) {
+                console.error('Erro ao processar imagens:', error);
+                alert('Erro ao processar as imagens. Por favor, tente novamente.');
+            } finally {
+                // Esconder loading
+                loadingElement.style.display = 'none';
+            }
         });
 
         // Função para alternar modo administrador
@@ -1196,6 +1493,18 @@
         adminPasswordInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 checkPassword();
+            }
+        });
+
+        // Limitar o número de imagens para evitar problemas de armazenamento
+        imagesInput.addEventListener('change', function() {
+            const files = this.files;
+            if (files.length > 10) {
+                alert('Por favor, selecione no máximo 10 imagens.');
+                this.value = '';
+                selectedFilesContainer.innerHTML = '';
+                fileCounter.textContent = '';
+                fileUploadLabel.classList.remove('has-files');
             }
         });
 
